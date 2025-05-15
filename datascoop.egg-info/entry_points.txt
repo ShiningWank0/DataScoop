@@ -1,0 +1,2 @@
+[console_scripts]
+datascoop = datascoop.cli:main
