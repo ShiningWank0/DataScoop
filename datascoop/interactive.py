@@ -162,6 +162,13 @@ class InteractiveDownloader:
         self.config_manager.set("verbose", verbose)
         if verbose:
             logger.setLevel(logging.DEBUG)
+        
+        # プラットフォームごとのサブディレクトリ
+        use_platform_subdirs = self._ask_yes_no(
+            "プラットフォーム（YouTube、Twitter等）ごとにサブディレクトリを作成しますか？",
+            self.config_manager.get("use_platform_subdirs", False)
+        )
+        self.config_manager.set("use_platform_subdirs", use_platform_subdirs)
             
         print("\n設定が完了しました。")
         
@@ -383,12 +390,14 @@ class InteractiveDownloader:
         use_original_title = self.config_manager.get("use_original_title", True)
         
         # デフォルト出力ディレクトリが存在しなければ作成
-        os.makedirs(default_output_dir, exist_ok=True)
+        from .utils.helpers import verify_output_directory, get_platform_from_url, get_platform_specific_output_dir
+        verify_output_directory(default_output_dir)
         
         # URLごとにダウンロード
         for i, url in enumerate(urls, 1):
             print(f"\n[{i}/{len(urls)}] {url} をダウンロード中...")
             platform = get_platform_from_url(url)
+            print(f"検出されたプラットフォーム: {platform}")
             
             # URLごとの個別設定を取得
             custom_filename = None
@@ -403,10 +412,15 @@ class InteractiveDownloader:
                 if 'output_dir' in url_settings:
                     custom_output_dir = url_settings['output_dir']
                     # URLごとの出力ディレクトリが存在しなければ作成
-                    os.makedirs(custom_output_dir, exist_ok=True)
+                    verify_output_directory(custom_output_dir)
             
             # このURLで使用する出力ディレクトリ
             output_dir = custom_output_dir or default_output_dir
+            
+            # プラットフォームごとのサブディレクトリを作成するオプション
+            use_platform_subdirs = self.config_manager.get("use_platform_subdirs", False)
+            if use_platform_subdirs and not custom_output_dir:
+                output_dir = get_platform_specific_output_dir(url, output_dir)
             
             # コンテンツタイプに応じたダウンローダーを準備
             downloaders = {}

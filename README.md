@@ -1,10 +1,10 @@
 # DataScoop
 
-DataScoopは、yt-dlpを使用して動画や音声データを効率的にダウンロードするためのPythonアプリケーションです。ユーザーフレンドリーな対話型インターフェースを備え、様々なプラットフォームからのコンテンツ取得を簡単に行えます。
+DataScoopは、yt-dlpを使用して動画や音声データを効率的にダウンロードするためのPythonアプリケーションです。ユーザーフレンドリーな対話型インターフェースを備え、YouTube、ニコニコ動画、Abemaからのコンテンツ取得を簡単に行えます。
 
 ## 特徴
 
-- YouTubeなど様々なプラットフォームからの動画・音声ダウンロード
+- YouTube、ニコニコ動画、Abemaからの動画・音声ダウンロード
 - ユーザーフレンドリーな対話型インターフェース
 - 高品質な音声抽出
 - 字幕のダウンロード対応
@@ -25,9 +25,22 @@ DataScoopは、yt-dlpを使用して動画や音声データを効率的にダ�
    cd datascoop
    ```
 
-2. 必要な依存関係をインストール:
+2. 依存関係のインストール:
+
+   ### pipを使用する場合
    ```bash
    pip install -r requirements.txt
+   ```
+   
+   ### uvを使用する場合 (推奨)
+   ```bash
+   # uvがインストールされていない場合、まずuvをインストール
+   pip install uv
+   
+   # uvを使って依存関係をインストール
+   uv pip install -r requirements.txt
+   # または
+   uv add -r requirements.txt
    ```
 
 ## 使用方法
@@ -40,8 +53,13 @@ DataScoopはデフォルトで対話型インターフェースで動作しま�
 # 対話モードで実行（デフォルト）
 python -m datascoop
 
+# またはuvを使用する場合
+uv run python -m datascoop
+
 # または明示的に対話モードを指定
 python -m datascoop -i
+# uvを使用する場合
+uv run python -m datascoop -i
 ```
 
 対話モードでは、初回実行時に設定を行い、その後は保存された設定を使用できます。また、複数のURLを簡単に入力できます。
@@ -56,24 +74,36 @@ python -m datascoop -i
 ```bash
 # 動画をダウンロード
 python -m datascoop https://www.youtube.com/watch?v=example
+# uvを使用する場合
+uv run python -m datascoop https://www.youtube.com/watch?v=example
 
 # 音声のみをダウンロード
 python -m datascoop https://www.youtube.com/watch?v=example -t audio
+# uvを使用する場合
+uv run python -m datascoop https://www.youtube.com/watch?v=example -t audio
 
 # 出力ディレクトリとファイル名を指定
 python -m datascoop https://www.youtube.com/watch?v=example -o my_downloads -f my_video
+# uvを使用する場合
+uv run python -m datascoop https://www.youtube.com/watch?v=example -o my_downloads -f my_video
 
 # 字幕付きで動画をダウンロード
 python -m datascoop https://www.youtube.com/watch?v=example --subtitles
+# uvを使用する場合
+uv run python -m datascoop https://www.youtube.com/watch?v=example --subtitles
 
 # 音質を指定して音声をダウンロード
 python -m datascoop https://www.youtube.com/watch?v=example -t audio --audio-format mp3
+# uvを使用する場合
+uv run python -m datascoop https://www.youtube.com/watch?v=example -t audio --audio-format mp3
 
 # 対話モードを強制的に使用
 python -m datascoop https://www.youtube.com/watch?v=example -i
+# uvを使用する場合
+uv run python -m datascoop https://www.youtube.com/watch?v=example -i
 ```
 
-※ `main.py` での実行は後方互換性のために残されていますが、`python -m datascoop` の使用が推奨されます。
+※ `main.py` での実行は後方互換性のために残されていますが、`python -m datascoop` または `uv run python -m datascoop` の使用が推奨されます。
 
 ### Pythonコードとして使用
 

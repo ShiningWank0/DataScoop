@@ -77,25 +77,17 @@ def get_platform_from_url(url):
         url (str): 動画URL
         
     Returns:
-        str: プラットフォーム名 (例: 'youtube', 'twitter', 'unknown')
+        str: プラットフォーム名 (例: 'youtube', 'niconico', 'unknown')
     """
     parsed_url = urlparse(url)
     domain = parsed_url.netloc.lower()
     
     if 'youtube' in domain or 'youtu.be' in domain:
         return 'youtube'
-    elif 'twitter' in domain or 'x.com' in domain:
-        return 'twitter'
-    elif 'instagram' in domain:
-        return 'instagram'
-    elif 'facebook' in domain or 'fb.com' in domain:
-        return 'facebook'
-    elif 'tiktok' in domain:
-        return 'tiktok'
-    elif 'vimeo' in domain:
-        return 'vimeo'
-    elif 'dailymotion' in domain:
-        return 'dailymotion'
+    elif 'nicovideo' in domain or 'nico.ms' in domain:
+        return 'niconico'
+    elif 'abema' in domain:
+        return 'abema'
     else:
         return 'unknown'
 
@@ -126,3 +118,41 @@ def check_available_formats(url):
     except Exception as e:
         logger.error(f"フォーマット一覧の取得中にエラーが発生しました: {e}")
         return []
+
+def verify_output_directory(output_dir):
+    """
+    出力ディレクトリが存在するか確認し、存在しなければ作成する
+    
+    Args:
+        output_dir (str): 出力ディレクトリパス
+        
+    Returns:
+        bool: ディレクトリが存在または作成された場合はTrue
+    """
+    if not output_dir:
+        return False
+        
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        return os.path.isdir(output_dir)
+    except Exception as e:
+        logger.error(f"出力ディレクトリの作成中にエラーが発生しました: {e}")
+        return False
+
+def get_platform_specific_output_dir(url, base_output_dir):
+    """
+    URLのプラットフォームに基づいた出力ディレクトリを取得する
+    
+    Args:
+        url (str): 動画URL
+        base_output_dir (str): 基本出力ディレクトリ
+        
+    Returns:
+        str: プラットフォーム特化の出力ディレクトリ
+    """
+    platform = get_platform_from_url(url)
+    output_dir = os.path.join(base_output_dir, platform)
+    verify_output_directory(output_dir)
+    return output_dir
+
+
