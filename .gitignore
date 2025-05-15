@@ -1,0 +1,58 @@
+# Pythonの一般的な.gitignoreファイル
+
+# キャッシュファイル
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 仮想環境
+venv/
+env/
+ENV/
+.env/
+.venv/
+
+# 開発環境設定
+.idea/
+.vscode/
+*.swp
+*.swo
+uv.lock
+
+# ビルドディレクトリ
+build/
+dist/
+downloads/
+
+# ユーザー設定ファイル
+~/.datascoop/
+
+# macOS固有のファイル
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ログファイル
+*.log
+logs/
+
+# uvツール関連
+.uv/
+
+# 個人設定ファイル
+config_local.py
+secret_keys.py
+
+# テスト用ファイル
+test_download*/
+
+# 一時ファイル
+*.tmp
+*.temp
+.coverage
+htmlcov/

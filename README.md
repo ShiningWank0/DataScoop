@@ -56,6 +56,9 @@ python -m datascoop
 # またはuvを使用する場合
 uv run python -m datascoop
 
+# インストール後にコマンドとして実行
+datascoop
+
 # または明示的に対話モードを指定
 python -m datascoop -i
 # uvを使用する場合
@@ -102,8 +105,6 @@ python -m datascoop https://www.youtube.com/watch?v=example -i
 # uvを使用する場合
 uv run python -m datascoop https://www.youtube.com/watch?v=example -i
 ```
-
-※ `main.py` での実行は後方互換性のために残されていますが、`python -m datascoop` または `uv run python -m datascoop` の使用が推奨されます。
 
 ### Pythonコードとして使用
 
@@ -201,7 +202,6 @@ DataScoopは階層化された設計を採用しており、機能ごとにモ�
 
 ```
 DataScoop/
-├── main.py                # エントリーポイント（後方互換用）
 ├── examples.py            # 使用例を示すサンプルスクリプト
 ├── pyproject.toml         # プロジェクト設定
 ├── requirements.txt       # 依存パッケージ一覧
@@ -209,6 +209,7 @@ DataScoop/
 ├── setup.py               # セットアップスクリプト
 └── datascoop/             # メインパッケージ
     ├── __init__.py        # パッケージ初期化
+    ├── __main__.py        # モジュール実行用エントリーポイント
     ├── cli.py             # コマンドラインインターフェース
     ├── interactive.py     # 対話型インターフェース
     ├── downloaders/       # ダウンローダーモジュール
@@ -226,7 +227,7 @@ DataScoop/
 ### 主要なモジュールと役割
 
 #### コアモジュール
-- **main.py**: 後方互換性のためのエントリーポイント
+- **datascoop/__main__.py**: モジュール実行用のエントリーポイント
 - **datascoop/cli.py**: コマンドライン処理とメイン機能の実装
 - **datascoop/interactive.py**: 対話型インターフェースの実装
 
