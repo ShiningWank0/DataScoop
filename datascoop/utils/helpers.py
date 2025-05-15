@@ -63,9 +63,18 @@ def extract_video_id(url):
     
     # YouTubeショートの場合
     shorts_regex = r'(https?://)?(www\.)?youtube\.com/shorts/([^&=%\?]{11})'
-    shorts_match = re.match(shorts_regex, url)
+    shorts_match = re.search(shorts_regex, url)
     if shorts_match:
         return shorts_match.group(3)
+        
+    # URLからshortsパターンを検出できない場合のフォールバック
+    if '/shorts/' in url:
+        parts = url.split('/shorts/')
+        if len(parts) > 1:
+            # パラメータがある場合は除去
+            video_id = parts[1].split('?')[0].split('&')[0]
+            if len(video_id) == 11:  # YouTubeのIDは11文字
+                return video_id
     
     return None
 
