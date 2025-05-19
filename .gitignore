@@ -23,6 +23,7 @@ ENV/
 *.swp
 *.swo
 uv.lock
+commentary.md
 
 # ビルドディレクトリ
 build/
