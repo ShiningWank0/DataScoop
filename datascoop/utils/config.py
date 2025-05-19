@@ -22,6 +22,27 @@ class ConfigManager:
         "subtitles": False,
         "verbose": False,
         "use_original_title": True, # コンテンツ元のタイトルをそのまま使用するか
+        "file_organization": "none", # none, platform, format, both
+        "use_platform_subdirs": False, # プラットフォームごとのサブディレクトリを使用するか
+        "use_format_subdirs": False, # ファイル形式ごとのサブディレクトリを使用するか
+        "platform_dirs": {         # プラットフォームごとのディレクトリ設定
+            "youtube": {
+                "video": "downloads/youtube/videos", 
+                "audio": "downloads/youtube/audio"
+            },
+            "niconico": {
+                "video": "downloads/niconico/videos", 
+                "audio": "downloads/niconico/audio"
+            },
+            "abema": {
+                "video": "downloads/abema/videos", 
+                "audio": "downloads/abema/audio"
+            },
+            "unknown": {
+                "video": "downloads/others/videos", 
+                "audio": "downloads/others/audio"
+            }
+        }
     }
     
     # 品質オプションの対応表
@@ -116,6 +137,16 @@ class ConfigManager:
             
         print(f"- 字幕ダウンロード: {'はい' if self.config['subtitles'] else 'いいえ'}")
         print(f"- オリジナルタイトル使用: {'はい' if self.config.get('use_original_title', True) else 'いいえ'}")
+        
+        # ファイル整理方法の表示
+        file_organization = self.config.get('file_organization', 'none')
+        organization_names = {
+            'none': '整理しない（すべて同じフォルダに保存）',
+            'platform': 'プラットフォームごとに分ける',
+            'format': 'ファイル形式ごとに分ける',
+            'both': 'プラットフォームとファイル形式の両方で分ける'
+        }
+        print(f"- ファイル整理方法: {organization_names.get(file_organization, file_organization)}")
         
     def _format_content_type(self):
         """コンテンツタイプを日本語で整形"""

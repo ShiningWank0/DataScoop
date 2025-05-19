@@ -148,18 +148,30 @@ def verify_output_directory(output_dir):
         logger.error(f"出力ディレクトリの作成中にエラーが発生しました: {e}")
         return False
 
-def get_platform_specific_output_dir(url, base_output_dir):
+def get_platform_specific_output_dir(url, base_output_dir, content_type=None, config_manager=None):
     """
     URLのプラットフォームに基づいた出力ディレクトリを取得する
     
     Args:
         url (str): 動画URL
         base_output_dir (str): 基本出力ディレクトリ
+        content_type (str, optional): コンテンツタイプ ('video'/'audio')
+        config_manager (ConfigManager, optional): 設定管理オブジェクト
         
     Returns:
         str: プラットフォーム特化の出力ディレクトリ
     """
     platform = get_platform_from_url(url)
+    
+    # 設定マネージャーが提供され、プラットフォーム別ディレクトリの設定がある場合
+    if config_manager and content_type:
+        platform_dirs = config_manager.get("platform_dirs", {})
+        if platform_dirs and platform in platform_dirs and content_type in platform_dirs[platform]:
+            output_dir = platform_dirs[platform][content_type]
+            verify_output_directory(output_dir)
+            return output_dir
+    
+    # 従来の挙動（フォールバック）
     output_dir = os.path.join(base_output_dir, platform)
     verify_output_directory(output_dir)
     return output_dir

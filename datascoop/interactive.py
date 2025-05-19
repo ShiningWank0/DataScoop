@@ -8,8 +8,8 @@ import logging
 import tkinter as tk
 from tkinter import filedialog
 from .utils.config import ConfigManager
-from .downloaders import VideoDownloader, AudioDownloader, YouTubeDownloader
-from .utils.helpers import setup_logger, get_platform_from_url
+from .downloaders import VideoDownloader, AudioDownloader, YouTubeDownloader, AbemaDownloader
+from .utils.helpers import setup_logger, get_platform_from_url, get_platform_specific_output_dir, verify_output_directory
 
 logger = setup_logger()
 
@@ -163,12 +163,37 @@ class InteractiveDownloader:
         if verbose:
             logger.setLevel(logging.DEBUG)
         
-        # プラットフォームごとのサブディレクトリ
-        use_platform_subdirs = self._ask_yes_no(
-            "プラットフォーム（YouTube、Twitter等）ごとにサブディレクトリを作成しますか？",
-            self.config_manager.get("use_platform_subdirs", False)
+        # ファイル整理方法の設定
+        file_organization = self._ask_choice(
+            "ダウンロードしたファイルの整理方法を選択してください:",
+            [
+                "整理しない（すべて同じフォルダに保存）", 
+                "プラットフォームごとに分ける", 
+                "ファイル形式ごとに分ける", 
+                "プラットフォームとファイル形式の両方で分ける"
+            ],
+            ["none", "platform", "format", "both"],
+            self.config_manager.get("file_organization", "none")
         )
+        self.config_manager.set("file_organization", file_organization)
+        
+        # プラットフォームごとのサブディレクトリが必要な場合
+        use_platform_subdirs = file_organization in ["platform", "both"]
         self.config_manager.set("use_platform_subdirs", use_platform_subdirs)
+        
+        # ファイル形式ごとのサブディレクトリが必要な場合
+        use_format_subdirs = file_organization in ["format", "both"]
+        self.config_manager.set("use_format_subdirs", use_format_subdirs)
+        
+        # プラットフォーム別の詳細設定
+        if use_platform_subdirs:
+            customize_platform_dirs = self._ask_yes_no(
+                "各プラットフォームごとの保存先を個別にカスタマイズしますか？",
+                False
+            )
+            
+            if customize_platform_dirs:
+                self._setup_platform_dirs(content_type)
             
         print("\n設定が完了しました。")
         
@@ -417,27 +442,83 @@ class InteractiveDownloader:
             # このURLで使用する出力ディレクトリ
             output_dir = custom_output_dir or default_output_dir
             
-            # プラットフォームごとのサブディレクトリを作成するオプション
-            use_platform_subdirs = self.config_manager.get("use_platform_subdirs", False)
-            if use_platform_subdirs and not custom_output_dir:
-                output_dir = get_platform_specific_output_dir(url, output_dir)
+            # ファイル整理方法の設定を取得
+            file_organization = self.config_manager.get("file_organization", "none")
+            use_platform_subdirs = self.config_manager.get("use_platform_subdirs", False) 
+            use_format_subdirs = self.config_manager.get("use_format_subdirs", False)
+            platform_dirs = self.config_manager.get("platform_dirs", {})
+            
+            # URLごとの個別設定がない場合、全体設定に基づいて出力ディレクトリを決定
+            if not custom_output_dir:
+                # プラットフォーム別設定がある場合はそちらを優先
+                if platform in platform_dirs:
+                    for_video = content_type in ["video", "both"]
+                    for_audio = content_type in ["audio", "both"]
+                    
+                    # プラットフォームごとの設定がある場合は使用
+                    if use_platform_subdirs:
+                        if for_video and for_audio:
+                            # bothの場合は後でそれぞれ処理
+                            pass
+                        elif for_video and "video" in platform_dirs[platform]:
+                            output_dir = platform_dirs[platform]["video"]
+                        elif for_audio and "audio" in platform_dirs[platform]:
+                            output_dir = platform_dirs[platform]["audio"]
+                    # なければヘルパー関数を使用
+                    else:
+                        output_dir = get_platform_specific_output_dir(
+                            url, 
+                            output_dir, 
+                            content_type="video" if content_type in ["video", "both"] else "audio",
+                            config_manager=self.config_manager
+                        )
             
             # コンテンツタイプに応じたダウンローダーを準備
             downloaders = {}
             
             if content_type in ["video", "both"]:
-                video_dir = os.path.join(output_dir, "videos") if content_type == "both" else output_dir
+                # output_dirを適切に調整
+                video_dir = output_dir
+                
+                # ファイル整理方法に応じて調整
+                if content_type == "both" or use_format_subdirs:
+                    video_dir = os.path.join(output_dir, "videos")
+                
+                # 出力ディレクトリ作成
+                verify_output_directory(video_dir)
+                
                 video_quality = self.config_manager.get("video_quality", "best")
                 video_format = self.config_manager.get("video_format", "mp4")
                 
-                # YouTubeダウンローダーを使用
-                downloaders["video"] = YouTubeDownloader(
-                    output_dir=video_dir,
-                    quality=video_quality
-                )
+                # プラットフォームに応じたダウンローダーを選択
+                if platform == 'youtube':
+                    downloaders["video"] = YouTubeDownloader(
+                        output_dir=video_dir,
+                        quality=video_quality
+                    )
+                elif platform == 'abema':
+                    downloaders["video"] = AbemaDownloader(
+                        output_dir=video_dir,
+                        quality=video_quality
+                    )
+                else:
+                    # その他のプラットフォームは一般的なVideoDownloaderを使用
+                    downloaders["video"] = VideoDownloader(
+                        output_dir=video_dir,
+                        quality=video_quality
+                    )
                 
             if content_type in ["audio", "both"]:
-                audio_dir = os.path.join(output_dir, "audio") if content_type == "both" else output_dir
+                # output_dirを適切に調整
+                audio_dir = output_dir
+                
+                # ファイル整理方法に応じて調整
+                if content_type == "both" or use_format_subdirs:
+                    audio_dir = os.path.join(output_dir, "audio")
+                
+                # 出力ディレクトリ作成
+                verify_output_directory(audio_dir)
+                
                 audio_quality = self.config_manager.get("audio_quality", "high")
                 audio_format = self.config_manager.get("audio_format", "mp3")
                 
@@ -500,3 +581,104 @@ class InteractiveDownloader:
                 print(f"{url} のダウンロード中にエラーが発生しました。")
                 
         print("\nすべてのダウンロードが完了しました。")
+        
+    def _setup_platform_dirs(self, content_type):
+        """各プラットフォームごとの保存先を設定する"""
+        print("\n--- プラットフォーム別設定 ---")
+        
+        # 整理方法を取得
+        file_organization = self.config_manager.get("file_organization", "none")
+        use_platform_subdirs = self.config_manager.get("use_platform_subdirs", False)
+        use_format_subdirs = self.config_manager.get("use_format_subdirs", False)
+        base_dir = self.config_manager.get("output_dir", "downloads")
+        
+        # 設定から現在のプラットフォームディレクトリ設定を取得
+        platform_dirs = self.config_manager.get("platform_dirs", {})
+        if not platform_dirs:
+            platform_dirs = {
+                "youtube": {"video": f"{base_dir}/youtube/videos", "audio": f"{base_dir}/youtube/audio"},
+                "niconico": {"video": f"{base_dir}/niconico/videos", "audio": f"{base_dir}/niconico/audio"},
+                "abema": {"video": f"{base_dir}/abema/videos", "audio": f"{base_dir}/abema/audio"},
+                "unknown": {"video": f"{base_dir}/others/videos", "audio": f"{base_dir}/others/audio"}
+            }
+        
+        platforms = ["youtube", "niconico", "abema", "unknown"]
+        platform_names = {
+            "youtube": "YouTube",
+            "niconico": "ニコニコ動画",
+            "abema": "Abema",
+            "unknown": "その他のプラットフォーム"
+        }
+        
+        # GUIで設定するかどうか
+        use_gui = self._ask_yes_no("GUIでディレクトリを選択しますか？", False)
+        
+        # 各プラットフォームの保存先を設定
+        for platform in platforms:
+            print(f"\n{platform_names[platform]}の設定:")
+            
+            # 動画の出力先
+            if content_type in ["video", "both"]:
+                # 適切なデフォルト値を構築
+                if file_organization == "none":
+                    default_video_dir = base_dir
+                elif file_organization == "platform":
+                    default_video_dir = f"{base_dir}/{platform}"
+                elif file_organization == "format":
+                    default_video_dir = f"{base_dir}/videos"
+                else:  # both
+                    default_video_dir = f"{base_dir}/{platform}/videos"
+                
+                # 現在の設定があればそれを使用
+                default_video_dir = platform_dirs.get(platform, {}).get("video", default_video_dir)
+                
+                if use_gui:
+                    print(f"{platform_names[platform]}の動画保存先ディレクトリを選択してください")
+                    video_dir = self._select_directory_gui() or default_video_dir
+                else:
+                    video_dir = self._ask_input(
+                        f"{platform_names[platform]}の動画保存先ディレクトリ", 
+                        default_video_dir
+                    )
+                
+                # プラットフォーム設定を確保
+                if platform not in platform_dirs:
+                    platform_dirs[platform] = {}
+                    
+                platform_dirs[platform]["video"] = video_dir
+                print(f"{platform_names[platform]}の動画は {video_dir} に保存されます")
+            
+            # 音声の出力先
+            if content_type in ["audio", "both"]:
+                # 適切なデフォルト値を構築
+                if file_organization == "none":
+                    default_audio_dir = base_dir
+                elif file_organization == "platform":
+                    default_audio_dir = f"{base_dir}/{platform}"
+                elif file_organization == "format":
+                    default_audio_dir = f"{base_dir}/audio"
+                else:  # both
+                    default_audio_dir = f"{base_dir}/{platform}/audio"
+                
+                # 現在の設定があればそれを使用
+                default_audio_dir = platform_dirs.get(platform, {}).get("audio", default_audio_dir)
+                
+                if use_gui:
+                    print(f"{platform_names[platform]}の音声保存先ディレクトリを選択してください")
+                    audio_dir = self._select_directory_gui() or default_audio_dir
+                else:
+                    audio_dir = self._ask_input(
+                        f"{platform_names[platform]}の音声保存先ディレクトリ", 
+                        default_audio_dir
+                    )
+                
+                # プラットフォーム設定を確保
+                if platform not in platform_dirs:
+                    platform_dirs[platform] = {}
+                    
+                platform_dirs[platform]["audio"] = audio_dir
+                print(f"{platform_names[platform]}の音声は {audio_dir} に保存されます")
+        
+        # 設定に保存
+        self.config_manager.set("platform_dirs", platform_dirs)
+        print("\nプラットフォーム別設定を保存しました。")

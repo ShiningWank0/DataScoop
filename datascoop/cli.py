@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 import logging
-from .downloaders import VideoDownloader, AudioDownloader, YouTubeDownloader
+from .downloaders import VideoDownloader, AudioDownloader, YouTubeDownloader, AbemaDownloader
 from .utils.helpers import setup_logger, get_platform_from_url, check_available_formats
 from .utils.config import ConfigManager
 from .interactive import InteractiveDownloader
@@ -174,10 +174,18 @@ def download_content(url, args):
     platform = get_platform_from_url(url)
     logger.info(f"検出されたプラットフォーム: {platform}")
     
-    # コンテンツの種類に応じてダウンローダーを作成
+    # コンテンツの種類に応じたダウンローダーを準備
     if args.type in ["video", "both"]:
-        video_output_dir = os.path.join(args.output_dir, "videos")
-        video_downloader = VideoDownloader(output_dir=video_output_dir, quality=args.quality)
+        video_output_dir = os.path.join(args.output_dir, "videos") if args.type == "both" else args.output_dir
+        
+        # プラットフォームに応じたダウンローダーを選択
+        if platform == 'youtube':
+            video_downloader = YouTubeDownloader(output_dir=video_output_dir, quality=args.quality)
+        elif platform == 'abema':
+            video_downloader = AbemaDownloader(output_dir=video_output_dir, quality=args.quality)
+        else:
+            # その他のプラットフォームは一般的なVideoDownloaderを使用
+            video_downloader = VideoDownloader(output_dir=video_output_dir, quality=args.quality)
         
         # 動画をダウンロード
         logger.info("動画のダウンロードを開始します...")
