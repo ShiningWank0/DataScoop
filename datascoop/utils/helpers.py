@@ -4,7 +4,7 @@
 import os
 import re
 import logging
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,13 @@ def extract_video_id(url):
     Returns:
         str: 動画ID、または抽出できない場合はNone
     """
+    # YouTubeショートを先に判定
+    shorts_regex = r'(https?://)?(www\.)?youtube\.com/shorts/([^&=%\?]{11})'
+    shorts_match = re.search(shorts_regex, url) # re.search を使用
+    if shorts_match:
+        return shorts_match.group(3) # VIDEO_ID は3番目のキャプチャグループ
+    
+    # 通常のYouTube動画
     youtube_regex = (
         r'(https?://)?(www\.)?'
         r'(youtube|youtu|youtube-nocookie)\.(com|be)/'
@@ -61,12 +68,6 @@ def extract_video_id(url):
     if youtube_match:
         return youtube_match.group(6)
     
-    # YouTubeショートの場合
-    shorts_regex = r'(https?://)?(www\.)?youtube\.com/shorts/([^&=%\?]{11})'
-    shorts_match = re.search(shorts_regex, url)
-    if shorts_match:
-        return shorts_match.group(3)
-        
     # URLからshortsパターンを検出できない場合のフォールバック
     if '/shorts/' in url:
         parts = url.split('/shorts/')
